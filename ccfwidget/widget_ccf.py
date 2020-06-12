@@ -3,7 +3,7 @@ __all__ = ['CCFWidget']
 from fsspec.implementations.http import HTTPFileSystem
 import json
 from .ipytree_widget import IPyTreeWidget
-from ipywidgets import HBox, register
+from ipywidgets import HBox, VBox, register, link, RadioButtons, Checkbox
 import itk
 from itkwidgets import view
 import numpy as np
@@ -38,16 +38,6 @@ class CCFWidget(HBox):
         self._image = itk.image_from_xarray(_image_da)
         self._label_map = itk.image_from_xarray(_label_map_da)
         opacity_gaussians = [[{'position': 0.28094135802469133,
-           'height': 0.18181818181818177,
-           'width': 0.2988194444444445,
-           'xBias': 0.21240499194846996,
-           'yBias': 0.5416908212560397},
-          {'position': 0.2787808641975309,
-           'height': 0.3545454545454545,
-           'width': 0.1,
-           'xBias': 0,
-           'yBias': 0}]]
-        opacity_gaussians = [[{'position': 0.28094135802469133,
            'height': 0.3909090909090909,
            'width': 0.44048611111111113,
            'xBias': 0.21240499194846996,
@@ -58,8 +48,8 @@ class CCFWidget(HBox):
            'xBias': 0,
            'yBias': 0}]]
         camera = np.array([[-1.9388698e+02, -6.0452373e+03,  2.0659662e+04],
-           [ 6.7440376e+03,  4.0228694e+03,  6.0504180e+03],
-           [ 4.6800941e-01, -8.1573588e-01, -3.3991495e-01]], dtype=np.float32)
+                           [ 6.7440376e+03,  4.0228694e+03,  6.0504180e+03],
+                           [ 4.6800941e-01, -8.1573588e-01, -3.3991495e-01]], dtype=np.float32)
         size_limit_3d = [256,256,256]
         self.itk_viewer = view(image=self._image,
                                label_map=self._label_map,
@@ -74,7 +64,15 @@ class CCFWidget(HBox):
         self.itk_viewer.opacity_gaussians = opacity_gaussians
         self.itk_viewer.rotate = rotate
 
-        children = [self.itk_viewer]
+        mode_buttons = RadioButtons(options=['x', 'y', 'z', 'v'], value='v', description='View mode:')
+        link((mode_buttons, 'value'), (self.itk_viewer, 'mode'))
+
+        rotate_checkbox = Checkbox(value=False, description='Rotate')
+        link((rotate_checkbox, 'value'), (self.itk_viewer, 'rotate'))
+        viewer_controls = HBox([mode_buttons, rotate_checkbox])
+        viewer = VBox([self.itk_viewer, viewer_controls])
+
+        children = [viewer]
         self.tree_widget = None
         if tree is not None:
             self.tree_widget = IPyTreeWidget(_structure_graph)
