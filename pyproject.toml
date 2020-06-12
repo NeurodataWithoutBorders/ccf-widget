@@ -12,6 +12,7 @@ requires-python = ">=3.5"
 requires = [
   "dask",
   "fsspec",
+  "ipytree",
   "itkwidgets >=0.29.0",
   "toolz",
   "xarray",
