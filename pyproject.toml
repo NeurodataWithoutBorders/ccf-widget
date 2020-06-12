@@ -1,0 +1,11 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "ccfwidget"
+author = "Matt McCormick"
+author-email = "matt.mccormick@kitware.com"
+home-page = "https://github.com/NeurodataWithoutBorders/ccf-widget"
+classifiers = ["License :: OSI Approved :: MIT License"]
+
