@@ -1,12 +1,15 @@
 __all__ = ['CCFWidget']
 
 from fsspec.implementations.http import HTTPFileSystem
+import json
+from .ipytree_widget import IPyTreeWidget
 from ipywidgets import HBox, register
 import itk
 from itkwidgets import view
 import numpy as np
 import xarray as xr
 import zarr
+import urllib.request
 
 _image_fs = HTTPFileSystem()
 # Todo: Use AWS store after Scott / Lydia upload
@@ -22,12 +25,16 @@ _label_map_store_cached = zarr.LRUStoreCache(_label_map_store, max_size=None)
 _label_map_ds = xr.open_zarr(_label_map_store_cached, consolidated=True)
 _label_map_da = _label_map_ds.allen_ccfv3_annotation
 
+# Todo: Use AWS store after Scott / Lydia upload
+with urllib.request.urlopen("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/1.json") as url:
+    _structure_graph = json.loads(url.read().decode())['msg'][0]['children'][0]
+
 @register
 class CCFWidget(HBox):
     """A Jupyter widget for the Allen Common Coordinate Framework (CCF)
     Mouse Brain Atlas."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, tree=None, rotate=False, **kwargs):
         self._image = itk.image_from_xarray(_image_da)
         self._label_map = itk.image_from_xarray(_label_map_da)
         opacity_gaussians = [[{'position': 0.28094135802469133,
@@ -65,7 +72,12 @@ class CCFWidget(HBox):
                                gradient_opacity=0.1)
         # Todo: initialization should work
         self.itk_viewer.opacity_gaussians = opacity_gaussians
+        self.itk_viewer.rotate = rotate
 
         children = [self.itk_viewer]
+        self.tree_widget = None
+        if tree is not None:
+            self.tree_widget = IPyTreeWidget(_structure_graph)
+            children.append(self.tree_widget)
 
         super(CCFWidget, self).__init__(children, **kwargs)
