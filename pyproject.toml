@@ -8,4 +8,14 @@ author = "Matt McCormick"
 author-email = "matt.mccormick@kitware.com"
 home-page = "https://github.com/NeurodataWithoutBorders/ccf-widget"
 classifiers = ["License :: OSI Approved :: MIT License"]
+requires-python = ">=3.5"
+requires = [
+  "zarr",
+  "xarray",
+  "itkwidgets >=0.28.1",
+  ]
 
+[tool.flit.metadata.requires-extra]
+test = [
+    "pytest",
+]
