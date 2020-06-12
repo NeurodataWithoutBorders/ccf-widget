@@ -2,7 +2,6 @@ __all__ = ['CCFWidget']
 
 from fsspec.implementations.http import HTTPFileSystem
 import json
-from .ipytree_widget import IPyTreeWidget
 from ipywidgets import HBox, VBox, register, link, RadioButtons, Checkbox
 import itk
 from itkwidgets import view
@@ -10,6 +9,9 @@ import numpy as np
 import xarray as xr
 import zarr
 import urllib.request
+
+from .ipytree_widget import IPyTreeWidget
+from .structure_graph import structure_graph, acronym_to_allen_id
 
 _image_fs = HTTPFileSystem()
 # Todo: Use AWS store after Scott / Lydia upload
@@ -24,10 +26,6 @@ _label_map_store = _label_map_fs.get_mapper("https://thewtex.github.io/allen-ccf
 _label_map_store_cached = zarr.LRUStoreCache(_label_map_store, max_size=None)
 _label_map_ds = xr.open_zarr(_label_map_store_cached, consolidated=True)
 _label_map_da = _label_map_ds.allen_ccfv3_annotation
-
-# Todo: Use AWS store after Scott / Lydia upload
-with urllib.request.urlopen("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/1.json") as url:
-    _structure_graph = json.loads(url.read().decode())['msg'][0]['children'][0]
 
 @register
 class CCFWidget(HBox):
@@ -75,7 +73,7 @@ class CCFWidget(HBox):
         children = [viewer]
         self.tree_widget = None
         if tree is not None:
-            self.tree_widget = IPyTreeWidget(_structure_graph)
+            self.tree_widget = IPyTreeWidget(structure_graph)
             children.append(self.tree_widget)
 
         super(CCFWidget, self).__init__(children, **kwargs)

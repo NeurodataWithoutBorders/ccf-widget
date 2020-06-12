@@ -3,7 +3,7 @@
 ## Installation
 
 ```
-pip install ccf-widget
+pip install ccfwidget
 ```
 
 ## Usage
