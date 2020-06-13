@@ -1,3 +1,5 @@
+__all__ = ['tree', 'allen_id_to_tree_node', 'acronym_to_allen_id', 'allen_id_to_acronym']
+
 import urllib.request
 import json
 
@@ -5,17 +7,36 @@ import json
 with urllib.request.urlopen("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/1.json") as url:
     structure_graph = json.loads(url.read().decode())['msg'][0]['children'][0]
 
+class TreeNode(object):
+    children = []
+    allen_id = 0
+
+    def __init__(self, allen_id):
+        self.allen_id = allen_id
+        self.children = []
+
+allen_id_to_tree_node = dict()
 acronym_to_allen_id = dict()
 
-def _add_ids(node):
+def _node_to_tree_node(node):
     allen_id = int(node['id'])
+    tree_node = TreeNode(allen_id)
+    allen_id_to_tree_node[allen_id] = tree_node
 
     acronym = node['acronym']
     acronym_to_allen_id[acronym] = allen_id
 
-def _process_node(node):
+    return tree_node
+
+def _process_node(tree_parent, node):
+    tree_node = _node_to_tree_node(node)
+    tree_parent.children.append(tree_node)
     for child in node['children']:
-        _process_node(child)
+        _process_node(tree_node, child)
+
+tree = TreeNode(None)
 
 for node in structure_graph['children']:
-    _process_node(node)
+    _process_node(tree, node)
+
+allen_id_to_acronym = { v: k for k, v in acronym_to_allen_id.items() }
