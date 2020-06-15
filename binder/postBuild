@@ -6,7 +6,7 @@ mkdir $HOME/.jupyter
 echo "c.NotebookApp.iopub_msg_rate_limit=1e22" >> $HOME/.jupyter/jupyter_notebook_config.py
 echo "c.NotebookApp.iopub_data_rate_limit=1e22" >> $HOME/.jupyter/jupyter_notebook_config.py
 
-python3 -m pip install ccfwidget
+flit install
 
 cd /tmp/
 jupyter labextension install @jupyter-widgets/jupyterlab-manager
