@@ -131,7 +131,7 @@ class CCFWidget(HBox):
 
     def _ipytree_on_selected_change(self, change):
         allen_ids = [node.allen_id for node in self.tree_widget.selected_nodes]
-        if not self._validating_tree:
+        if not self._validating_tree and not self._validating_allen_ids and not self._validating_acronyms:
             self.selected_allen_ids = allen_ids
         self.tree_widget.layout.width = '40%'
 
