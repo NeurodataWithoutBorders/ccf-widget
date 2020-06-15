@@ -1,5 +1,7 @@
 # ccf-widget
 
+![ccfwidget](https://i.imgur.com/Q4VY5du.gif)
+
 ## Installation
 
 ```
