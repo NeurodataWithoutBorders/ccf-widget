@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -ex
+
+mkdir $HOME/.jupyter
+echo "c.NotebookApp.iopub_msg_rate_limit=1e22" >> $HOME/.jupyter/jupyter_notebook_config.py
+echo "c.NotebookApp.iopub_data_rate_limit=1e22" >> $HOME/.jupyter/jupyter_notebook_config.py
+
+python3 -m pip install ccfwidget
+
+jupyter nbextension install --py --sys-prefix itkwidgets
+jupyter nbextension enable --py --sys-prefix itkwidgets
+cd /tmp/
+jupyter labextension install @jupyter-widgets/jupyterlab-manager
+jupyter labextension install jupyter-matplotlib jupyterlab-datawidgets jupyter-webrtc itkwidgets
