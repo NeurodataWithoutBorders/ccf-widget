@@ -111,16 +111,17 @@ class CCFWidget(HBox):
                 self.last_selected_tree_nodes = []
                 def ipytree_on_allen_ids_changed(change):
                     self._validating_tree = True
-                    for node in self.last_selected_tree_nodes:
-                        node.selected = False
-                    tree_nodes = [self.tree_widget.allen_id_to_node[allen_id] for allen_id in change.new]
-                    for node in tree_nodes:
-                        open_parent(node)
-                        node.selected = True
-                        node.opened = True
+                    with self.tree_widget.hold_sync():
+                        for node in self.last_selected_tree_nodes:
+                            node.selected = False
+                        tree_nodes = [self.tree_widget.allen_id_to_node[allen_id] for allen_id in change.new]
+                        for node in tree_nodes:
+                            open_parent(node)
+                            node.selected = True
+                            node.opened = True
                     self.last_selected_tree_nodes = tree_nodes
                     self._validating_tree = False
-                self.observe(ipytree_on_allen_ids_changed, names='selected_allen_ids')
+                # self.observe(ipytree_on_allen_ids_changed, names='selected_allen_ids')
             else:
                 raise RuntimeError('Invalid tree type')
 
