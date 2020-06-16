@@ -1,6 +1,6 @@
 # ccf-widget
 
-[![Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NeurodataWithoutBorders/ccf-widget/master?urlpath=lab/tree/examples%2FStructureTreeNavigation.ipynb)
+[![Binder](http://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/NeurodataWithoutBorders/ccf-widget/master?filepath=examples%2FStructureTreeNavigation.ipynb)
 
 ![ccfwidget](https://i.imgur.com/Q4VY5du.gif)
 
