@@ -11,7 +11,6 @@ import xarray as xr
 import zarr
 import urllib.request
 
-from .ipytree_widget import IPyTreeWidget
 from .structure_graph import acronym_to_allen_id, allen_id_to_acronym, structure_graph
 from .allen_id_label import labels_for_allen_id
 
@@ -42,7 +41,36 @@ class CCFWidget(HBox):
     selected_acronyms = List(trait=Unicode(), help='Structure Allen Ids to highlight.')
     selected_allen_ids = List(trait=CInt(), help='Structure Allen Ids to highlight.')
 
-    def __init__(self, tree=None, rotate=False, **kwargs):
+    def __init__(self, tree=None,
+            rotate=False,
+            point_sets=None,
+            selected_allen_ids=None,
+            selected_acronyms=None,
+            **kwargs):
+        """Create a 3D CCF visualization ipywidget.
+
+        Parameters
+        ----------
+        tree : None or 'ipytree', optional, default: None
+            Structure tree visualization to include.
+
+        rotate: bool, optional, default: False
+            Make the CCF continuously rotate.
+
+        point_sets: List of Nx3 arrays, optional, default: None
+            Points locations to visualize in the CCF. Each element in the list
+            corresponds to a different point set. Each point set has N points,
+            with point locations in CCF coordinates:
+                [anterior_posterior, dorsal_ventral, left_right]
+
+        selected_allen_ids: List of Allen ids to highlight, optional, default: None
+            List of integer Allen Structure Graph ids to highlight. Specify
+            selected_allen_ids or selected_acronyms.
+
+        selected_acronyms: List of Allen acronyms to highlight, optional, default: None
+            List of string Allen Structure Graph acronyms to highlight. Specify
+            selected_allen_ids or selected_acronyms.
+        """
         self._image = itk.image_from_xarray(_image_da)
         self._label_map = itk.image_from_xarray(_label_map_da)
         opacity_gaussians = [[{'position': 0.28094135802469133,
@@ -68,6 +96,7 @@ class CCFWidget(HBox):
                                label_map=self._label_map,
                                opacity_gaussians=opacity_gaussians,
                                label_map_blend=0.65,
+                               point_sets=point_sets,
                                camera=camera,
                                ui_collapsed=True,
                                shadow=False,
@@ -97,6 +126,7 @@ class CCFWidget(HBox):
         self.tree_widget = None
         if tree is not None:
             if tree == 'ipytree':
+                from .ipytree_widget import IPyTreeWidget
                 self.tree_widget = IPyTreeWidget(structure_graph)
                 children.append(self.tree_widget)
                 self.tree_widget.observe(self._ipytree_on_selected_change, names=['selected_nodes'])
@@ -127,8 +157,12 @@ class CCFWidget(HBox):
 
         self.labels = np.unique(self.itk_viewer.rendered_label_map)
 
-
         super(CCFWidget, self).__init__(children, **kwargs)
+
+        if selected_acronyms:
+            self.selected_acronyms = selected_acronyms
+        if selected_allen_ids:
+            self.selected_allen_ids = selected_allen_ids
 
     def _ipytree_on_selected_change(self, change):
         allen_ids = [node.allen_id for node in self.tree_widget.selected_nodes]
