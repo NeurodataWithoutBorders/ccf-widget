@@ -31,7 +31,10 @@ Examples on Binder:
 
 - [Explore the structure tree](https://mybinder.org/v2/gh/NeurodataWithoutBorders/ccf-widget/master?filepath=examples%2FStructureTreeNavigation.ipynb)
 - [Use markers to represent neuropixels](https://mybinder.org/v2/gh/NeurodataWithoutBorders/ccf-widget/master?filepath=examples%2FNeuropixelProbes.ipynb)
-- [Add a cell type morphology](https://mybinder.org/v2/gh/NeurodataWithoutBorders/ccf-widget/master?filepath=examples%2FCellTypes.ipynb)
+
+Additional examples:
+
+- [Add a cell type morphology](./examples/CellTypes.ipynb)
 
 ## Troubleshooting
 
