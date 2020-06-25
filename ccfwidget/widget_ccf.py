@@ -123,7 +123,7 @@ class CCFWidget(HBox):
                                label_image=self._label_image,
                                opacity_gaussians=opacity_gaussians,
                                label_image_blend=0.65,
-                               point_sets=markers,
+                               point_sets=markers.copy(),
                                camera=camera,
                                ui_collapsed=True,
                                shadow=False,
