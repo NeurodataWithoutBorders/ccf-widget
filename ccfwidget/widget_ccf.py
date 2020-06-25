@@ -10,9 +10,12 @@ from traitlets import CFloat, CInt, List, Unicode, validate
 import xarray as xr
 import zarr
 import urllib.request
+import matplotlib.colors
 
-from .structure_graph import acronym_to_allen_id, allen_id_to_acronym, structure_graph
+from .structure_graph import acronym_to_allen_id, allen_id_to_acronym, structure_graph, allen_id_to_tree_node
 from .allen_id_label import labels_for_allen_id
+from .swc_morphology import swc_morphology_geometry
+from .structure_mesh import structure_mesh
 
 from IPython.core.debugger import set_trace
 
@@ -23,12 +26,12 @@ _image_store_cached = zarr.LRUStoreCache(_image_store, max_size=None)
 _image_ds = xr.open_zarr(_image_store_cached, consolidated=True)
 _image_da = _image_ds.average_template_50
 
-_label_map_fs = HTTPFileSystem()
+_label_image_fs = HTTPFileSystem()
 # Todo: Use AWS store after Scott / Lydia upload
-_label_map_store = _label_map_fs.get_mapper("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/allen_ccfv3_annotation_50_contiguous.zarr")
-_label_map_store_cached = zarr.LRUStoreCache(_label_map_store, max_size=None)
-_label_map_ds = xr.open_zarr(_label_map_store_cached, consolidated=True)
-_label_map_da = _label_map_ds.allen_ccfv3_annotation
+_label_image_store = _label_image_fs.get_mapper("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/allen_ccfv3_annotation_50_contiguous.zarr")
+_label_image_store_cached = zarr.LRUStoreCache(_label_image_store, max_size=None)
+_label_image_ds = xr.open_zarr(_label_image_store_cached, consolidated=True)
+_label_image_da = _label_image_ds.allen_ccfv3_annotation
 
 @register
 class CCFWidget(HBox):
@@ -41,27 +44,46 @@ class CCFWidget(HBox):
     selected_acronyms = List(trait=Unicode(), help='Structure Allen Ids to highlight.')
     selected_allen_ids = List(trait=CInt(), help='Structure Allen Ids to highlight.')
 
+    markers = List(help='Marker locations to visualize.')
+    marker_sizes = List(help='Marker sizes.')
+    marker_opacities = List(help='Marker opacities.')
+    marker_colors = List(help='Marker colors.')
+
     def __init__(self, tree=None,
-            rotate=False,
-            point_sets=None,
+            swc_morphologies=[],
+            markers=[],
+            marker_sizes=[],
+            marker_opacities=[],
+            marker_colors=[],
             selected_allen_ids=None,
             selected_acronyms=None,
+            rotate=False,
             **kwargs):
         """Create a 3D CCF visualization ipywidget.
 
         Parameters
         ----------
-        tree : None or 'ipytree', optional, default: None
+        tree: None or 'ipytree', optional, default: None
             Structure tree visualization to include.
 
-        rotate: bool, optional, default: False
-            Make the CCF continuously rotate.
+        swc_morphologies: List, optional, default: []
+            List of Allen SWC morphologies to render.
 
-        point_sets: List of Nx3 arrays, optional, default: None
+        markers: List of Nx3 arrays, optional, default: []
             Points locations to visualize in the CCF. Each element in the list
-            corresponds to a different point set. Each point set has N points,
+            corresponds to a different set of markers. Each marker set has N points,
             with point locations in CCF coordinates:
                 [anterior_posterior, dorsal_ventral, left_right]
+
+        marker_sizes: List of integers in [1, 10], optional, default: []
+            Size of the markers.
+
+        marker_opacities: array of floats, default: [1.0,]*n
+            Opacity for the markers, in the range (0.0, 1.0].
+
+        marker_colors: list of (r, g, b) colors
+            Colors for the N markers. See help(matplotlib.colors) for
+            specification. Defaults to the Glasbey series of categorical colors.
 
         selected_allen_ids: List of Allen ids to highlight, optional, default: None
             List of integer Allen Structure Graph ids to highlight. Specify
@@ -70,9 +92,14 @@ class CCFWidget(HBox):
         selected_acronyms: List of Allen acronyms to highlight, optional, default: None
             List of string Allen Structure Graph acronyms to highlight. Specify
             selected_allen_ids or selected_acronyms.
+
+        rotate: bool, optional, default: False
+            Make the CCF continuously rotate.
         """
         self._image = itk.image_from_xarray(_image_da)
-        self._label_map = itk.image_from_xarray(_label_map_da)
+        self._label_image = itk.image_from_xarray(_label_image_da)
+        self.swc_point_sets = []
+        self.swc_geometries = []
         opacity_gaussians = [[{'position': 0.28094135802469133,
            'height': 0.3909090909090909,
            'width': 0.44048611111111113,
@@ -84,7 +111,7 @@ class CCFWidget(HBox):
            'xBias': 0,
            'yBias': 0}]]
         opacity_gaussians = [[{'position': 0.32816358024691356,
-           'height': 1,
+           'height': 0.5,
            'width': 0.29048611111111106,
            'xBias': 0.20684943639291442,
            'yBias': 1.1235090030742216}]]
@@ -93,10 +120,10 @@ class CCFWidget(HBox):
                            [ 3.6606243e-01, -4.4908229e-01, -8.1506038e-01]], dtype=np.float32)
         size_limit_3d = [256,256,256]
         self.itk_viewer = view(image=self._image,
-                               label_map=self._label_map,
+                               label_image=self._label_image,
                                opacity_gaussians=opacity_gaussians,
-                               label_map_blend=0.65,
-                               point_sets=point_sets,
+                               label_image_blend=0.65,
+                               point_sets=markers.copy(),
                                camera=camera,
                                ui_collapsed=True,
                                shadow=False,
@@ -106,7 +133,7 @@ class CCFWidget(HBox):
         # Todo: initialization should work
         self.itk_viewer.opacity_gaussians = opacity_gaussians
         self.itk_viewer.rotate = rotate
-        self.itk_viewer.label_map_blend = 0.65
+        self.itk_viewer.label_image_blend = 0.65
 
         mode_buttons = RadioButtons(options=['x', 'y', 'z', 'v'], value='v', description='View mode:')
         link((mode_buttons, 'value'), (self.itk_viewer, 'mode'))
@@ -155,14 +182,33 @@ class CCFWidget(HBox):
             else:
                 raise RuntimeError('Invalid tree type')
 
-        self.labels = np.unique(self.itk_viewer.rendered_label_map)
+        self.labels = np.unique(self.itk_viewer.rendered_label_image)
 
         super(CCFWidget, self).__init__(children, **kwargs)
+
+        for morphology in swc_morphologies:
+            soma_point_set, geometry = swc_morphology_geometry(morphology)
+            self.swc_point_sets.append(soma_point_set)
+            self.swc_geometries.append(geometry)
+        if swc_morphologies:
+            self.itk_viewer.point_sets = self.swc_point_sets
+            self.itk_viewer.point_set_sizes = [3,]*len(self.swc_point_sets)
+            self.itk_viewer.point_set_opacities = [1.0,]*len(self.swc_point_sets)
+            self.itk_viewer.point_set_colors = [(1.0, 0.0, 0.0),]*len(self.swc_point_sets)
+            self.itk_viewer.geometries = self.swc_geometries
 
         if selected_acronyms:
             self.selected_acronyms = selected_acronyms
         if selected_allen_ids:
             self.selected_allen_ids = selected_allen_ids
+
+        self.markers = markers
+        if marker_sizes:
+            self.marker_sizes = marker_sizes
+        if marker_opacities:
+            self.marker_opacities = marker_opacities
+        if marker_colors:
+            self.marker_colors = marker_colors
 
     def _ipytree_on_selected_change(self, change):
         allen_ids = [node.allen_id for node in self.tree_widget.selected_nodes]
@@ -201,4 +247,44 @@ class CCFWidget(HBox):
             labels_for_id = labels_for_allen_id(allen_id)
             weights[labels_for_id] = self.on_weight
 
-        self.itk_viewer.label_map_weights = weights
+        if not allen_ids:
+            return
+
+        surfaces = [structure_mesh(allen_id) for allen_id in allen_ids]
+        self.itk_viewer.geometries = self.swc_geometries + surfaces
+        self.itk_viewer.geometry_opacities = [1.0,]*len(self.swc_geometries) + \
+            [0.5,]*len(surfaces)
+        colors = list(self.itk_viewer.geometry_colors)[:len(self.swc_geometries)]
+        for allen_id in allen_ids:
+            hex_color = '#' + allen_id_to_tree_node[allen_id].color_hex_triplet
+            colors.append(matplotlib.colors.to_rgb(hex_color))
+        self.itk_viewer.geometry_colors = np.array(colors, dtype=np.float32)
+
+        self.itk_viewer.label_image_weights = weights
+
+        self.itk_viewer.ui_collapsed = True
+
+    @validate('markers')
+    def _validate_markers(self, proposal):
+        markers = proposal['value']
+        self.itk_viewer.point_sets = self.swc_point_sets + markers
+        return markers
+
+    @validate('marker_sizes')
+    def _validate_marker_sizes(self, proposal):
+        value = proposal['value']
+        self.itk_viewer.point_set_sizes = [3,]*len(self.swc_point_sets) + value
+        return value
+
+    @validate('marker_opacities')
+    def _validate_marker_opacities(self, proposal):
+        value = proposal['value']
+        self.itk_viewer.point_set_opacities = [1.0,]*len(self.swc_point_sets) + value
+        return value
+
+    @validate('marker_colors')
+    def _validate_marker_colors(self, proposal):
+        value = proposal['value']
+        self.itk_viewer.point_set_colors = [(1.0, 0.0, 0.0),]*len(self.swc_point_sets) + value
+        return value
+
