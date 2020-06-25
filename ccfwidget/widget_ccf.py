@@ -205,6 +205,8 @@ class CCFWidget(HBox):
         self.markers = markers
         if marker_sizes:
             self.marker_sizes = marker_sizes
+        if marker_opacities:
+            self.marker_opacities = marker_opacities
         if marker_colors:
             self.marker_colors = marker_colors
 
