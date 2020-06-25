@@ -13,7 +13,7 @@ requires = [
   "dask",
   "fsspec",
   "ipytree",
-  "itkwidgets >=0.30.0",
+  "itkwidgets >=0.30.1",
   "toolz",
   "xarray",
   "zarr",
