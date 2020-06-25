@@ -4,11 +4,11 @@ channels:
 dependencies:
   - python=3.8
   - allensdk
-  - pip:
-    - flit
-    - ipywidgets>=7.1.2
-    - jupyterlab
-    - numpy
-    - ipywebrtc
-    - plotly>=3.3.0
-    - pandas
+  - pip
+  - flit
+  - ipywidgets>=7.1.2
+  - jupyterlab
+  - numpy
+  - ipywebrtc
+  - plotly>=3.3.0
+  - pandas
