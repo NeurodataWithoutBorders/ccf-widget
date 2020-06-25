@@ -10,10 +10,12 @@ from traitlets import CFloat, CInt, List, Unicode, validate
 import xarray as xr
 import zarr
 import urllib.request
+import matplotlib.colors
 
-from .structure_graph import acronym_to_allen_id, allen_id_to_acronym, structure_graph
+from .structure_graph import acronym_to_allen_id, allen_id_to_acronym, structure_graph, allen_id_to_tree_node
 from .allen_id_label import labels_for_allen_id
 from .swc_morphology import swc_morphology_geometry
+from .structure_mesh import structure_mesh
 
 from IPython.core.debugger import set_trace
 
@@ -89,7 +91,7 @@ class CCFWidget(HBox):
            'xBias': 0,
            'yBias': 0}]]
         opacity_gaussians = [[{'position': 0.32816358024691356,
-           'height': 1,
+           'height': 0.5,
            'width': 0.29048611111111106,
            'xBias': 0.20684943639291442,
            'yBias': 1.1235090030742216}]]
@@ -164,11 +166,6 @@ class CCFWidget(HBox):
 
         super(CCFWidget, self).__init__(children, **kwargs)
 
-        if selected_acronyms:
-            self.selected_acronyms = selected_acronyms
-        if selected_allen_ids:
-            self.selected_allen_ids = selected_allen_ids
-
         self.swc_point_sets = []
         self.swc_geometries = []
         for morphology in swc_morphologies:
@@ -178,6 +175,11 @@ class CCFWidget(HBox):
         if swc_morphologies:
             self.itk_viewer.point_sets = self.swc_point_sets
             self.itk_viewer.geometries = self.swc_geometries
+
+        if selected_acronyms:
+            self.selected_acronyms = selected_acronyms
+        if selected_allen_ids:
+            self.selected_allen_ids = selected_allen_ids
 
     def _ipytree_on_selected_change(self, change):
         allen_ids = [node.allen_id for node in self.tree_widget.selected_nodes]
@@ -216,4 +218,16 @@ class CCFWidget(HBox):
             labels_for_id = labels_for_allen_id(allen_id)
             weights[labels_for_id] = self.on_weight
 
+        surfaces = [structure_mesh(allen_id) for allen_id in allen_ids]
+        self.itk_viewer.geometries = self.swc_geometries + surfaces
+        self.itk_viewer.geometry_opacities = [1.0,]*len(self.swc_geometries) + \
+            [0.5,]*len(surfaces)
+        colors = list(self.itk_viewer.geometry_colors)[:len(self.swc_geometries)]
+        for allen_id in allen_ids:
+            hex_color = '#' + allen_id_to_tree_node[allen_id].color_hex_triplet
+            colors.append(matplotlib.colors.to_rgb(hex_color))
+        self.itk_viewer.geometry_colors = np.array(colors, dtype=np.float32)
+
         self.itk_viewer.label_image_weights = weights
+
+        self.itk_viewer.ui_collapsed = True

@@ -10,9 +10,11 @@ with urllib.request.urlopen("https://thewtex.github.io/allen-ccf-itk-vtk-zarr/1.
 class TreeNode(object):
     children = []
     allen_id = 0
+    color_hex_triplet = 'FF0000'
 
-    def __init__(self, allen_id):
+    def __init__(self, allen_id, color_hex_triplet):
         self.allen_id = allen_id
+        self.color_hex_triplet = color_hex_triplet
         self.children = []
 
 allen_id_to_tree_node = dict()
@@ -20,7 +22,7 @@ acronym_to_allen_id = dict()
 
 def _node_to_tree_node(node):
     allen_id = int(node['id'])
-    tree_node = TreeNode(allen_id)
+    tree_node = TreeNode(allen_id, node['color_hex_triplet'])
     allen_id_to_tree_node[allen_id] = tree_node
 
     acronym = node['acronym']
@@ -34,7 +36,7 @@ def _process_node(tree_parent, node):
     for child in node['children']:
         _process_node(tree_node, child)
 
-tree = TreeNode(None)
+tree = TreeNode(None, None)
 
 for node in structure_graph['children']:
     _process_node(tree, node)
