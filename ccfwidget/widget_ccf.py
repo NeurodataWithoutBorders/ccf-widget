@@ -272,20 +272,17 @@ class CCFWidget(HBox):
     def _validate_marker_sizes(self, proposal):
         value = proposal['value']
         self.itk_viewer.point_set_sizes = [3,]*len(self.swc_point_sets) + value
-        print('size:', value)
         return value
 
     @validate('marker_opacities')
     def _validate_marker_opacities(self, proposal):
         value = proposal['value']
         self.itk_viewer.point_set_opacities = [1.0,]*len(self.swc_point_sets) + value
-        print('opacities:', value)
         return value
 
     @validate('marker_colors')
     def _validate_marker_colors(self, proposal):
         value = proposal['value']
         self.itk_viewer.point_set_colors = [(1.0, 0.0, 0.0),]*len(self.swc_point_sets) + value
-        print('colors:', value)
         return value
 
