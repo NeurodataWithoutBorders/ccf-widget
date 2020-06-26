@@ -36,9 +36,13 @@ def _process_node(tree_parent, node):
     for child in node['children']:
         _process_node(tree_node, child)
 
-tree = TreeNode(None, None)
+# "Basic cell groups and regions"
+tree = TreeNode(8, 'BFDAE3')
+allen_id_to_tree_node[8] = tree
+acronym_to_allen_id['grey'] = 8
 
 for node in structure_graph['children']:
     _process_node(tree, node)
 
 allen_id_to_acronym = { v: k for k, v in acronym_to_allen_id.items() }
+allen_id_to_acronym[8] = 'grey'
