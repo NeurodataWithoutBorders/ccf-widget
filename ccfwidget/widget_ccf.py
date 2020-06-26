@@ -128,7 +128,8 @@ class CCFWidget(HBox):
                                ui_collapsed=True,
                                shadow=False,
                                size_limit_3d=size_limit_3d,
-                               background=(0.0,)*3,
+                               background=(0.85,)*3,
+                               units="μm",
                                gradient_opacity=0.1)
         # Todo: initialization should work
         self.itk_viewer.opacity_gaussians = opacity_gaussians
