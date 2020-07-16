@@ -17,6 +17,7 @@ requires = [
   "toolz",
   "xarray",
   "zarr",
+  "requests",
   ]
 
 [tool.flit.metadata.requires-extra]
