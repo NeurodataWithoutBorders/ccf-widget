@@ -1,6 +1,6 @@
 """A Jupyter widget for the Allen Common Coordinate Framework (CCF) Mouse Brain Atlas."""
 
-__version__ = '0.5.2'
+__version__ = '0.5.3'
 
 __all__ = ['CCFWidget']
 
