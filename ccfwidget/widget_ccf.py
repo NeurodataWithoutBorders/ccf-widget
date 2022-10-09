@@ -41,8 +41,8 @@ class CCFWidget(HBox):
     off_weight = 0.05
     on_weight = 1.0
 
-    selected_acronyms = List(trait=Unicode(), help='Structure Allen Ids to highlight.')
-    selected_allen_ids = List(trait=CInt(), help='Structure Allen Ids to highlight.')
+    selected_acronyms = List(allow_none=True, trait=Unicode(), help='Structure Allen Ids to highlight.')
+    selected_allen_ids = List(allow_none=True, trait=CInt(), help='Structure Allen Ids to highlight.')
 
     markers = List(help='Marker locations to visualize.')
     marker_sizes = List(help='Marker sizes.')
@@ -55,7 +55,7 @@ class CCFWidget(HBox):
             marker_sizes=[],
             marker_opacities=[],
             marker_colors=[],
-            selected_allen_ids=None,
+            selected_allen_ids=[8,],
             selected_acronyms=None,
             rotate=False,
             **kwargs):
@@ -221,6 +221,8 @@ class CCFWidget(HBox):
     def _validate_selected_allen_ids(self, proposal):
         self._validating_allen_ids = True
         allen_ids = proposal['value']
+        if allen_ids is None:
+            allen_ids = []
         self._highlight_allen_ids(allen_ids)
         acronyms = [allen_id_to_acronym[allen_id] for allen_id in allen_ids]
         if not self._validating_acronyms and \
@@ -233,6 +235,8 @@ class CCFWidget(HBox):
     def _validate_selected_acronyms(self, proposal):
         self._validating_acronyms = True
         acronyms = proposal['value']
+        if acronyms is None:
+            acronyms = []
         allen_ids = [acronym_to_allen_id[acronym] for acronym in acronyms]
         if not self._validating_allen_ids and \
             not self.selected_allen_ids == allen_ids:
@@ -241,15 +245,17 @@ class CCFWidget(HBox):
         return acronyms
 
     def _highlight_allen_ids(self, allen_ids):
-        weights = np.ones((len(self.labels),), dtype=np.float32)*self.off_weight
+        weights = np.ones((len(self.labels),), dtype=np.float32)
+        if allen_ids and 8 in allen_ids:
+            # Optimization for the entire brain
+            weights *= self.on_weight
+        else:
+            weights *= self.off_weight
+            for allen_id in allen_ids:
+                labels_for_id = labels_for_allen_id(allen_id)
+                weights[labels_for_id] = self.on_weight
         # Background
         weights[0] = 0.0
-        for allen_id in allen_ids:
-            labels_for_id = labels_for_allen_id(allen_id)
-            weights[labels_for_id] = self.on_weight
-
-        if not allen_ids:
-            return
 
         surfaces = [structure_mesh(allen_id) for allen_id in allen_ids]
         self.itk_viewer.geometries = self.swc_geometries + surfaces
@@ -259,7 +265,8 @@ class CCFWidget(HBox):
         for allen_id in allen_ids:
             hex_color = '#' + allen_id_to_tree_node[allen_id].color_hex_triplet
             colors.append(matplotlib.colors.to_rgb(hex_color))
-        self.itk_viewer.geometry_colors = np.array(colors, dtype=np.float32)
+        if colors:
+            self.itk_viewer.geometry_colors = np.array(colors, dtype=np.float32)
 
         self.itk_viewer.label_image_weights = weights
 
