@@ -13,7 +13,7 @@ for an understanding of electrophysiology.
 
 ## Installation
 
-```
+```shell
 pip install ccfwidget
 ```
 
@@ -21,7 +21,7 @@ pip install ccfwidget
 
 In Jupyter:
 
-```
+```python
 from ccfwidget import CCFWidget
 ccf = CCFWidget()
 ccf
